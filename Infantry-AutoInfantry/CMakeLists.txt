@@ -1,4 +1,4 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 3.5)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.1)
 PROJECT(InfantryAutoaim)
 
 
@@ -12,6 +12,7 @@ set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread")
 FIND_PACKAGE(OpenCV 4 REQUIRED)
 FIND_PACKAGE(Threads)
 FIND_PACKAGE(Eigen3 REQUIRED)
+FIND_PACKAGE(Ceres REQUIRED)
 
 INCLUDE_DIRECTORIES(
 	"include/"
@@ -24,6 +25,7 @@ INCLUDE_DIRECTORIES(
 	"include/Serial"
 	"include/Solver"
 	"include/Rune"
+	${Cere_INCLUDE_DIRECTORIES}
 	${OPENCV_INCLUDE_DIRECTORIES}
 	${Eigen_INCLUDE_DIRECTORIES}
 )
@@ -33,4 +35,4 @@ add_subdirectory(
 FILE(GLOB_RECURSE sourcefiles "src/*.cpp")
 
 ADD_EXECUTABLE(Autoaim  ${sourcefiles})
-TARGET_LINK_LIBRARIES(Autoaim  mercure_driver  ${OpenCV_LIBS})
+TARGET_LINK_LIBRARIES(Autoaim  mercure_driver ${CERES_LIBRARIES} ${OpenCV_LIBS})

@@ -200,8 +200,8 @@ void FitTool::pushFittingData(SpeedTime new_data)
         fitting_data.push_back(new_data);
         return;
     }
-    SpeedTime flag_data = fitting_data[fitting_data.size() - 1];
-    if ((double)new_data.time - (double)flag_data.time - DT * 1000.0 < 0)
+    SpeedTime flag_data = fitting_data[fitting_data.size() - 1];//最新数据
+    if ((double)new_data.time - (double)flag_data.time - DT * 1000.0 < 0)//两帧之间时间间隔小于采样时间
     {
         return;
     }
@@ -215,14 +215,26 @@ void FitTool::pushFittingData(SpeedTime new_data)
         return;
     }
 
-    for (int i = 0; i < (int)n; i++)
+    for (int i = 0; i < (int)n; i++)//线性插值
     {
-        // cout << "Intering: " << n << endl;
+        //cout << "Intering: " << n << endl;
         // cout << "New: " << new_data.time << "\tOld: " << flag_data.time << endl;
         double temp_T = T * (i + 1);
         double delta = (double)new_data.time - (double)flag_data.time - temp_T;
-        SpeedTime temp = SpeedTime(new_data.angle_speed * (temp_T / (temp_T + delta)) + flag_data.angle_speed * (delta / (temp_T + delta)), flag_data.time + (uint32_t)temp_T);  
-        fitting_data.push_back(temp);     
+        double temp_speed = new_data.angle_speed * (temp_T / (temp_T + delta)) + flag_data.angle_speed * (delta / (temp_T + delta));
+        uint32_t temp_time = flag_data.time + (uint32_t)temp_T;
+        SpeedTime temp = SpeedTime(temp_speed, temp_time);
+        //SpeedTime temp = SpeedTime(new_data.angle_speed * (temp_T / (temp_T + delta)) + flag_data.angle_speed * (delta / (temp_T + delta)), flag_data.time + (uint32_t)temp_T);  
+        fitting_data.push_back(temp); 
+        double temp_a = (2.090 - temp_speed) / 2; 
+
+        //a范围[0.780,1.045] 
+        if(temp_a >= 0.770 && temp_a <= 1.055)
+        {
+            est_a.push_back(temp_a);
+        }
+        if(est_a.size() > 80)
+            est_a.erase(est_a.begin());
     }
 }
 
@@ -270,6 +282,7 @@ void FitTool::fittingCurve()
     if (fitting_data[fitting_data.size() - 1].time - fitting_data[0].time >= (N - 1) * DT * 1000 - 1)
     {
         fitting_a_w();
+        fitting_a();
         if (isnan(_a))
         {
             cout << "A nan" << endl;
@@ -301,9 +314,35 @@ void FitTool::fitting_a_w()
         }
     }
     _w = max_i / (double)N * 2.0 * M_PI;
-    _a = max_value / N * 2;
-    if (_a > 1.045) _a = 1.045;
-    else if (_a < 0.780) _a = 0.780;
+    
+    //_a = max_value / N * 2;
+    // if (_a > 1.045) _a = 1.045;
+    // else if (_a < 0.780) _a = 0.780;
+    //_a = 0.780;
+}
+
+void FitTool::fitting_a()
+{
+    //按照大小划分占比
+    double sum = 0.0;
+    sort(est_a.begin(),est_a.end());
+    //int sum_i = (0 + est_a.size() - 1) * est_a.size() / 2;
+    //五次方超界，选择四次方
+    long int four_sum_i = 0;
+    for(int i = 0; i < est_a.size(); i++)
+        four_sum_i += i * i * i * i ;
+
+    for(int i = 0; i < est_a.size(); i++)
+    {
+        sum += est_a[i] * i * i * i * i  / four_sum_i;
+    } 
+    
+    if(sum > 1.045)
+        _a = 1.045;
+    else if(sum < 0.780)
+        _a = 0.780;
+    else
+        _a = sum;
 }
 
 void FitTool::fitting_t()
@@ -328,6 +367,7 @@ void FitTool::clearData()
     cout << "Clear Fitting Data!" << endl;
     fitting_data.clear();
     armor_buffer.clear();
+    est_a.clear();
 }
 
 FitTool::FitTool(uint32_t _start_time)

@@ -32,6 +32,7 @@ class FitTool
 public:
     vector<RuneArmor> armor_buffer;
     vector<SpeedTime> fitting_data;
+    vector<double> est_a;
 
 private:
     double _a = 0.9;  // 振幅 [0.780, 1.045]
@@ -88,6 +89,16 @@ public:
      */
     void pushFittingData(SpeedTime);
 
+    /**
+     *  @brief  初步拟合数据
+     */
+    void fittingCurve();
+
+    /**
+     *  @brief  判断能量机关旋转方向
+     */
+    void initDirection();
+
 private:
     /**
      *  @brief  击打大符模式
@@ -100,14 +111,14 @@ private:
     bool runNormalRune(RuneArmor armor_1, vector<cv::Point2f> &nextPosition, ArmorState armor_state);
 
     /**
-     *  @brief  初步拟合数据
-     */
-    void fittingCurve();
-
-    /**
      *  @brief  通过离散傅里叶变换求w
      */
     void fitting_a_w();
+    
+    /**
+     *  @brief  拟合振幅
+     */
+    void fitting_a();
 
     /**
      *  @brief  拟合相位
@@ -135,11 +146,6 @@ private:
      *  @return 返回增大的角度，单位：弧度
      */
     double deltaAngle(uint32_t time);
-
-    /**
-     *  @brief  判断能量机关旋转方向
-     */
-    void initDirection();
 
     /**
      *  @brief  大符公式，用于补帧处理
@@ -215,10 +221,27 @@ public:
     /**
      *  @brief  打印结果
      */
-    void printResult()
+    // void printResult()
+    // {
+    //     cout << "a: " << _a << "\tw: " << _w << endl;
+    //     cout << "t: " << t_0 << endl;
+    // }
+        void printResult()
     {
-        cout << "a: " << _a << "\tw: " << _w << endl;
+        cout << "a: " << _a << endl;
+        cout<< "w: " << _w << endl;
         cout << "t: " << t_0 << endl;
+    }
+    
+    /**
+     *  @brief  打印测试结果
+     */
+    void printResult_demo(double a,double w,double t)
+    {
+        cout<<"T:"<<2 * CV_PI / w <<endl;
+        cout << "a: " << _a <<"\tderta_a:"<< a - _a << endl;
+        cout<< "w: " << _w <<"\tderta_w:"<< w - _w << endl;
+        cout << "t: " << t_0<<"\tderta_t:"<< t - t_0 << endl;
     }
     ~FitTool() = default;
 };
