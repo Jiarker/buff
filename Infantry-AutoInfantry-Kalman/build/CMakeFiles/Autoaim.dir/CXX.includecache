@@ -56,19 +56,9 @@ Tools.h
 Mat_time.h
 ../include/Rune/Mat_time.h
 
-/home/oem/Desktop/buff/Infantry-AutoInfantry-Kalman/src/demo_fit.cpp
+/home/oem/Desktop/buff/Infantry-AutoInfantry-Kalman/src/Rune/Fitting.cpp
 Rune/Fitting.h
-/home/oem/Desktop/buff/Infantry-AutoInfantry-Kalman/src/Rune/Fitting.h
-fstream
--
-iostream
--
-opencv2/opencv.hpp
--
-time.h
--
-stdlib.h
--
+/home/oem/Desktop/buff/Infantry-AutoInfantry-Kalman/src/Rune/Rune/Fitting.h
 
 /usr/local/include/opencv4/opencv2/calib3d.hpp
 opencv2/core.hpp
