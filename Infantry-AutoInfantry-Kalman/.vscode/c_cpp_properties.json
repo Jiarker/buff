@@ -1,0 +1,28 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/include/**",
+                "/usr/local/include/opencv4/**",
+                "${workspaceFolder}/include/ImageProgress",
+                "${workspaceFolder}/include/Serial",
+                "${workspaceFolder}/include",
+                "${workspaceFolder}/include/Solver",
+                "/usr/local/include/opencv4",
+                "/usr/local/include/eigen3"
+            ],
+            "defines": [],
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "gnu17",
+            "cppStandard": "gnu++14",
+            "intelliSenseMode": "linux-gcc-x64",
+            "configurationProvider": "ms-vscode.cmake-tools",
+            "compilerArgs":[
+                "-fexec-charset=GBK"
+            ]
+        }
+    ],
+    "version": 4
+}
