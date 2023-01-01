@@ -6,7 +6,7 @@
 using namespace std;
 using namespace cv;
 
-//角函数呈周期性变化。速度目标函数为：spd = a ∗ sin(𝜔 ∗ 𝑡) + 𝑏，其中 spd 的单位为rad/s
+//角函数呈周期性变化。速度目标函数为：spd = a ?6?5 sin(?3?0 ?6?5 ?3?9) + ?3?1，其中 spd 的单位为rad/s
 //w:[1.884,2.000]
 //T:[3.1415,3.3350]
 //b = 2.090 - a
@@ -45,13 +45,21 @@ int main()
     double w = 1.80;
     double t0 = 2.0;
 
+    //随机初始化参数
+    srand(cv::getTickCount());
+    a = (rand() %(1045 - 780 + 1) + 780) * 1.0 / 1000.0;
+    b = 2.090 - a;
+    w = (rand() % (2000 - 1884 + 1) + 1884) * 1.0 / 1000.0;
+    t0 = (rand() % (3000 - 0 + 1) + 0) * 1.0 / 1000.0;
+
     double sum = 420;//采样数量;fitting_data.size()超过400开始拟合
 
     for(int i = 0; i < sum; i++)
     {
-        data = a * sin(w * 0.01 * i + t0) + (2.090 - a);
+        data = a * sin(w * (0.01 * i + t0)) + (2.090 - a);
         time += (10 + rng.gaussian(1));//每10ms进行一次采样
         fittool.pushFittingData(SpeedTime(data, time));
+        cout<<"speed:"<<data<<"\ttime:"<<time<<endl;
     }
 
     

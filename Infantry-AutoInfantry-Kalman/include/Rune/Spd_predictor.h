@@ -50,9 +50,9 @@ public:
      *  @brief  初始化状态值
      *  @param  angle_time   大符速度和线形插值后的时间戳
      */
-    void initState(AngleTime angle_time);
+    void initState(double angle, double speed, uint32_t time);
     
-    /**
+    /**  
      *  @brief  预测
      *  @param  angle_time   大符速度和线形插值后的时间戳
      */
@@ -62,4 +62,4 @@ public:
     ~SpdPredictor() = default;
 };
 
-#endif;
+#endif

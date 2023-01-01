@@ -29,7 +29,7 @@ int main()
     SpdPredictor spdpredictor;
     cv::RNG rng;
     double data;
-    uint32_t time = 0;
+    uint32_t time = 1e7;
 
     double a = 0.903;
     double b = 2.090 - a;
@@ -74,15 +74,36 @@ int main()
     // }
 
     vector<AngleTime>angle_times;
+    uint32_t last_t;
+    double last_angle;
     for(int i = 0; i < sum; i++)
     {
         double data_angle = (-a/w)*cos(w*((float)time/1000.0 + t0)) + (float)time/1000.0*(2.090-a) + (a/w)*cos(w*t0);
         //cout<<"time:"<<time<<"\tdata_angle:"<<data_angle<<endl;
         angle_times.push_back(AngleTime(data_angle, time));
         if(i == 0)
-            spdpredictor.initState(AngleTime(data_angle, time));
+        {
+            //spdpredictor.initState(AngleTime(data_angle, time));
+            last_angle = data_angle;
+            last_t = time;
+        }
+        else if(i == 1)
+        {
+            double init_angle = (data_angle + last_angle)/2;
+            double speed = (data_angle - last_angle) / ((double)(time - last_t)/1000);
+            uint32_t init_time = (time + last_t)/2;
+            //double speed = a * sin(w * (time + t0)) + (2.090 - a);
+            spdpredictor.initState(data_angle, speed, time);
+        }
+            
         else
         {
+            // double angle = (data_angle + last_angle)/2;
+            // double speed = (data_angle - last_angle) / ((double)(time - last_t)/1000);
+            // uint32_t a_time = (time + last_t)/2;
+            // cout<<"time:"<<a_time<<"\tangle:"<<angle<<"\tspeed:"<<speed<<endl;
+            // last_angle = data_angle;
+            // last_t = time;
             SpeedTime correct_speed_time = spdpredictor.predict(AngleTime(data_angle, time));//Ô¤²â
             while(angle_times.size() > 2)
             {

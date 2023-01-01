@@ -63,18 +63,19 @@
     <cols>2</cols>
     <dt>f</dt>
     <data>
-        1. 0.   <!-- 1-->
-        0. 1.
+        1000. 0.   <!-- 1-->
+        0. 1000.
     </data>
         
     </kalman_spd_Q>
 
+    <!--值越大,变化趋势越趋于稳定-->
     <kalman_spd_R type_id="opencv-matrix">  <!-- R 测量噪声(角度angle)-->
     <rows>1</rows>
     <cols>1</cols>
     <dt>f</dt>
     <data>
-        1.
+       0.0
 
     </data>
     </kalman_spd_R>
