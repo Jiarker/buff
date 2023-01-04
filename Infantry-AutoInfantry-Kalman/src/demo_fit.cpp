@@ -4,6 +4,7 @@
 #include <opencv2/opencv.hpp>
 #include <time.h>
 #include <stdlib.h>
+#include <graphics.h>
 
 using namespace std;
 using namespace cv;
@@ -98,13 +99,20 @@ int main()
             
         else
         {
-            // double angle = (data_angle + last_angle)/2;
-            // double speed = (data_angle - last_angle) / ((double)(time - last_t)/1000);
-            // uint32_t a_time = (time + last_t)/2;
-            // cout<<"time:"<<a_time<<"\tangle:"<<angle<<"\tspeed:"<<speed<<endl;
-            // last_angle = data_angle;
-            // last_t = time;
-            SpeedTime correct_speed_time = spdpredictor.predict(AngleTime(data_angle, time));//Ô¤²â
+            //¼ÆËãÔ­Öµ
+            double angle = (data_angle + last_angle)/2;
+            double speed = (data_angle - last_angle) / ((double)(time - last_t)/1000);
+            uint32_t a_time = (time + last_t)/2;
+            cout<<"time:"<<a_time<<"\tangle:"<<angle<<"\tspeed:"<<speed<<endl;
+            last_angle = data_angle;
+            last_t = time;
+
+            //Ô¤²â
+            SpeedTime correct_speed_time = spdpredictor.predict(AngleTime(data_angle, time));
+
+            //»æÍ¼
+            initgraph()
+
             while(angle_times.size() > 2)
             {
                 uint32_t delta_time = correct_speed_time.time - angle_times[0].time;

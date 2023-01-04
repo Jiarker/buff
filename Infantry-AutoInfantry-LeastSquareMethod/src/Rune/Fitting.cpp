@@ -104,11 +104,11 @@ bool FitTool::runNormalRune(RuneArmor armor_1, vector<cv::Point2f> &nextPosition
 cv::Point2f FitTool::calNextPosition(cv::Point2f point, cv::Point2f org, float rotate_angle)
 {
     double radius = calDistance(point, org);
-    cv::Point2f relative_point = point - org;                                         // ç›¸å¯¹åæ ‡
-    double relative_angle = atan2(relative_point.y, relative_point.x);                // ä¸åœ†å¿ƒæ‰€æˆè§’åº¦
+    cv::Point2f relative_point = point - org;                                         // Ïà¶Ô×ø±ê
+    double relative_angle = atan2(relative_point.y, relative_point.x);                // ÓëÔ²ĞÄËù³É½Ç¶È
     double next_angle;
 
-    if (is_clockwise) // é¡ºæ—¶é’ˆè¿åŠ¨
+    if (is_clockwise) // Ë³Ê±ÕëÔË¶¯
     {
         next_angle = relative_angle + rotate_angle;
         if (next_angle > CV_PI)
@@ -200,8 +200,8 @@ void FitTool::pushFittingData(SpeedTime new_data)
         fitting_data.push_back(new_data);
         return;
     }
-    SpeedTime flag_data = fitting_data[fitting_data.size() - 1];//æ¬¡æœ€æ–°æ•°æ®
-    // if ((double)new_data.time - (double)flag_data.time - DT * 1000.0 < 0)//ä¸¤å¸§ä¹‹é—´æ—¶é—´é—´éš”å°äºé‡‡æ ·æ—¶é—´
+    SpeedTime flag_data = fitting_data[fitting_data.size() - 1];//´Î×îĞÂÊı¾İ
+    // if ((double)new_data.time - (double)flag_data.time - DT * 1000.0 < 0)//Á½Ö¡Ö®¼äÊ±¼ä¼ä¸ôĞ¡ÓÚ²ÉÑùÊ±¼ä
     // {
     //     return;
     // }
@@ -209,7 +209,7 @@ void FitTool::pushFittingData(SpeedTime new_data)
     double T = 1000 * DT;
     double n = ((double)new_data.time - (double)flag_data.time) / T;
 
-    if (n > 50)//æ‰‡å¶ä¸¢å¤±
+    if (n > 50)//ÉÈÒ¶¶ªÊ§
     {
         clearData();
         return;
@@ -251,52 +251,93 @@ double FitTool::calAngleSpeed(RuneArmor armor_1, RuneArmor armor_2)
         angle_diff = angle_diff + CV_PI * 2.0;
     else if (armor_1.angle > CV_PI / 2.0 && armor_2.angle < -CV_PI / 2.0)
         angle_diff = angle_diff - CV_PI * 2.0;
-    return angle_diff / time_diff; // è½¬æ¢å•ä½
+    return angle_diff / time_diff; // ×ª»»µ¥Î»
 }
 
 
-/*---------------æ‹Ÿåˆå‡½æ•°-----------------*/
+/*---------------ÄâºÏº¯Êı-----------------*/
+// void FitTool::fittingCurve()
+// {
+//     if (fitting_data.empty())   
+//         return;
+
+//     if (fitting_data.size() >= N )
+//     {
+//         //¹¹½¨×îĞ¡¶ş³ËÎÊÌâ
+//         ceres::Problem problem;
+//         for(int i = 0; i < N; i++)
+//         {
+//             //¹¹ÔìÊ±¼ä±äÁ¿_(x)
+//             double time = (double)(fitting_data[i].time - fitting_data[0].time);
+//             //ÏòÎÊÌâÖĞÌí¼ÓÎó²îÏî
+//             problem.AddResidualBlock(
+//                 //Ê¹ÓÃ×Ô¶¯Çóµ¼,Ä£°å²ÎÊı:Îó²îÀàĞÍ¡¢Êä³öÎ¬¶È¡¢ÊäÈëÎ¬¶È,Î¬ÊıÒªÓëÇ°ÃæstructÒ»ÖÂ
+//                 new ceres::AutoDiffCostFunction<CURVE_FITTING_COST, 1, 3>(
+//                     new CURVE_FITTING_COST(time, fitting_data[i].angle_speed)
+//                 ),
+//                 nullptr, //ºËº¯Êı,ÕâÀï²»Ê¹ÓÃ,Îª¿Õ
+//                 awt //´ı¹À¼Æº¯Êı
+//             );
+//         }
+
+//         //ÅäÖÃÇó½âÆ÷
+//         ceres::Solver::Options options;//ÕâÀïÓĞºÜ¶àÅäÖÃÏî¿ÉÌî
+//         options.linear_solver_type = ceres::DENSE_NORMAL_CHOLESKY;//ÔöÁ¿·½³ÌÈçºÎÇó½â
+//         options.minimizer_progress_to_stdout = true; //Êä³öµ½cout
+
+//         ceres::Solver::Summary summary;//ÓÅ»¯ĞÅÏ¢
+//         ceres::Solve(options, &problem, &summary);//¿ªÊ¼ÓÅ»¯
+//         cout<<summary.BriefReport()<<endl;
+//         cout<<"estimated a, w, t = ";
+//         for (auto a:awt)
+//             cout<< a  <<" ";
+//         cout << endl;
+//         _a = awt[0];
+//         _w = awt[1];
+//         t_0 = awt[2];
+//         is_Inited = true;
+//     }
+// }
+
 void FitTool::fittingCurve()
 {
     if (fitting_data.empty())   
         return;
-
-    if (fitting_data.size() >= N )
+    else
     {
-        //æ„å»ºæœ€å°äºŒä¹˜é—®é¢˜
-        ceres::Problem problem;
-        for(int i = 0; i < N; i++)
+        //fitting_w();
+        //fitting_a();
+        if (isnan(_a))
         {
-            //æ„é€ æ—¶é—´å˜é‡_(x)
-            double time = (double)(fitting_data[i].time - fitting_data[0].time);
-            //å‘é—®é¢˜ä¸­æ·»åŠ è¯¯å·®é¡¹
-            problem.AddResidualBlock(
-                //ä½¿ç”¨è‡ªåŠ¨æ±‚å¯¼,æ¨¡æ¿å‚æ•°:è¯¯å·®ç±»å‹ã€è¾“å‡ºç»´åº¦ã€è¾“å…¥ç»´åº¦,ç»´æ•°è¦ä¸å‰é¢structä¸€è‡´
-                new ceres::AutoDiffCostFunction<CURVE_FITTING_COST, 1, 3>(
-                    new CURVE_FITTING_COST(time, fitting_data[i].angle_speed)
-                ),
-                nullptr, //æ ¸å‡½æ•°,è¿™é‡Œä¸ä½¿ç”¨,ä¸ºç©º
-                awt //å¾…ä¼°è®¡å‡½æ•°
-            );
+            cout << "A nan" << endl;
+            _a = 0.9;
+            _w = 1.9;
+            t_0 = 0;
+            clearData();
+            return;
         }
-
-        //é…ç½®æ±‚è§£å™¨
-        ceres::Solver::Options options;//è¿™é‡Œæœ‰å¾ˆå¤šé…ç½®é¡¹å¯å¡«
-        options.linear_solver_type = ceres::DENSE_NORMAL_CHOLESKY;//å¢é‡æ–¹ç¨‹å¦‚ä½•æ±‚è§£
-        options.minimizer_progress_to_stdout = true; //è¾“å‡ºåˆ°cout
-
-        ceres::Solver::Summary summary;//ä¼˜åŒ–ä¿¡æ¯
-        ceres::Solve(options, &problem, &summary);//å¼€å§‹ä¼˜åŒ–
-        cout<<summary.BriefReport()<<endl;
-        cout<<"estimated a, w, t = ";
-        for (auto a:awt)
-            cout<< a  <<" ";
-        cout << endl;
-        _a = awt[0];
-        _w = awt[1];
-        t_0 = awt[2];
+        fitting_t();
         is_Inited = true;
     }
+}
+
+void FitTool::fitting_t()
+{
+    double max_value = 0.0, value = 0.0;
+    int max_i = 0;
+    MAX_T0 = 2 * M_PI / _w;
+    for (int i = 0; i < T0_N + 1; i++)
+    {
+        value = get_integral((double)i * MAX_T0 / T0_N);
+        cout<<"t0:"<<(double)i * MAX_T0 / T0_N<<"\tvalue:"<<value<<endl;
+        if (value > max_value)
+        {
+            max_i = i;
+            max_value = value;
+        }
+    }
+    t_0 = (double)max_i * MAX_T0 / T0_N;
+    start_time = fitting_data[0].time;
 }
 
 

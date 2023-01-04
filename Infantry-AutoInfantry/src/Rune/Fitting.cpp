@@ -73,8 +73,8 @@ bool FitTool::runNormalRune(RuneArmor armor_1, vector<cv::Point2f> &nextPosition
                                         (armor_1.gyro_pose.timestamp + armor_buffer[armor_buffer.size() - 1 - DN].gyro_pose.timestamp) / 2));
             while (armor_buffer.size() > DN + 1)
                 armor_buffer.erase(armor_buffer.begin());
-            while (fitting_data.size() > 200)
-                fitting_data.erase(fitting_data.begin());
+            while (fitting_data_w.size() > 200)
+                fitting_data_w.erase(fitting_data_w.begin());
         }
         break;
     case ArmorState::LOST:
@@ -105,10 +105,10 @@ cv::Point2f FitTool::calNextPosition(cv::Point2f point, cv::Point2f org, float r
 {
     double radius = calDistance(point, org);
     cv::Point2f relative_point = point - org;                                         // 相对坐标
-    double relative_angle = atan2(relative_point.y, relative_point.x);                // 与圆心所成角度
+    double relative_angle = atan2(relative_point.y, relative_point.x);                // 与圆心所成角庄1�7
     double next_angle;
 
-    if (is_clockwise) // 顺时针运动
+    if (is_clockwise) // 顺时针运劄1�7
     {
         next_angle = relative_angle + rotate_angle;
         if (next_angle > CV_PI)
@@ -179,7 +179,7 @@ bool FitTool::processDataState(RuneArmor armor_1, ArmorState armor_state)
 
     case ArmorState::LOST:
         armor_buffer.clear();
-        fitting_data.clear();
+        fitting_data_w.clear();
         return false;
         break;
         
@@ -187,20 +187,32 @@ bool FitTool::processDataState(RuneArmor armor_1, ArmorState armor_state)
         return false;
         break;
     }
-    while (fitting_data.size() > N)
-        fitting_data.erase(fitting_data.begin());
+    while (fitting_data_w.size() > N)
+        fitting_data_w.erase(fitting_data_w.begin());
     
     return true;
 }
 
 void FitTool::pushFittingData(SpeedTime new_data)
 {
-    if (fitting_data.empty())
+    fitting_data.push_back(new_data);
+    
+    double temp_a = (2.090 - new_data.angle_speed) / 2; 
+    //a范围[0.780,1.045] 
+    if(temp_a >= 0.770 && temp_a <= 1.055)
     {
-        fitting_data.push_back(new_data);
+        est_a.push_back(temp_a);
+    }
+    if(est_a.size() > 80)
+        est_a.erase(est_a.begin());
+
+
+    if (fitting_data_w.empty())
+    {
+        fitting_data_w.push_back(new_data);
         return;
     }
-    SpeedTime flag_data = fitting_data[fitting_data.size() - 1];//最新数据
+    SpeedTime flag_data = fitting_data_w[fitting_data_w.size() - 1];//朢�新数捄1�7
     if ((double)new_data.time - (double)flag_data.time - DT * 1000.0 < 0)//两帧之间时间间隔小于采样时间
     {
         return;
@@ -215,7 +227,7 @@ void FitTool::pushFittingData(SpeedTime new_data)
         return;
     }
 
-    for (int i = 0; i < (int)n; i++)//线性插值
+    for (int i = 0; i < (int)n; i++)//线��插倄1�7
     {
         //cout << "Intering: " << n << endl;
         // cout << "New: " << new_data.time << "\tOld: " << flag_data.time << endl;
@@ -225,27 +237,18 @@ void FitTool::pushFittingData(SpeedTime new_data)
         uint32_t temp_time = flag_data.time + (uint32_t)temp_T;
         SpeedTime temp = SpeedTime(temp_speed, temp_time);
         //SpeedTime temp = SpeedTime(new_data.angle_speed * (temp_T / (temp_T + delta)) + flag_data.angle_speed * (delta / (temp_T + delta)), flag_data.time + (uint32_t)temp_T);  
-        fitting_data.push_back(temp); 
-        double temp_a = (2.090 - temp_speed) / 2; 
-
-        //a范围[0.780,1.045] 
-        if(temp_a >= 0.770 && temp_a <= 1.055)
-        {
-            est_a.push_back(temp_a);
-        }
-        if(est_a.size() > 80)
-            est_a.erase(est_a.begin());
+        fitting_data_w.push_back(temp); 
     }
 }
 
 void FitTool::initDirection()
 {
-    if (fitting_data.size() >= 50)
+    if (fitting_data_w.size() >= 50)
     {
         int clock = 0, clock_inv = 0;
-        for (int i = 0; i < fitting_data.size(); i++)
+        for (int i = 0; i < fitting_data_w.size(); i++)
         {
-            if (fitting_data[i].angle_speed > 0)
+            if (fitting_data_w[i].angle_speed > 0)
                 clock++;
             else
                 clock_inv++;
@@ -278,10 +281,10 @@ double FitTool::calAngleSpeed(RuneArmor armor_1, RuneArmor armor_2)
 /*---------------拟合函数-----------------*/
 void FitTool::fittingCurve()
 {
-    if (fitting_data.empty())   return;
-    if (fitting_data[fitting_data.size() - 1].time - fitting_data[0].time >= (N - 1) * DT * 1000 - 1)
+    if (fitting_data_w.empty() || fitting_data.empty())   return;
+    if (fitting_data_w[fitting_data_w.size() - 1].time - fitting_data_w[0].time >= (N - 1) * DT * 1000 - 1)
     {
-        fitting_a_w();
+        fitting_w();
         fitting_a();
         if (isnan(_a))
         {
@@ -297,7 +300,7 @@ void FitTool::fittingCurve()
     }
 }
 
-void FitTool::fitting_a_w()
+void FitTool::fitting_w()
 {
     int n_min = 1.884 / (2 * M_PI) * N;
     int n_max = 2.0 / (2 * M_PI) * N + 1;
@@ -307,6 +310,7 @@ void FitTool::fitting_a_w()
     for (int i = n_min + 1; i < n_max; i++)
     {
         value = get_F(i, N);
+        cout<<"value:"<<value<<endl;
         if (value > max_value)
         {
             max_i = (double)i;
@@ -327,7 +331,7 @@ void FitTool::fitting_a()
     double sum = 0.0;
     sort(est_a.begin(),est_a.end());
     //int sum_i = (0 + est_a.size() - 1) * est_a.size() / 2;
-    //五次方超界，选择四次方
+    //五次方超界，选择四次斄1�7
     long int four_sum_i = 0;
     for(int i = 0; i < est_a.size(); i++)
         four_sum_i += i * i * i * i ;
@@ -349,9 +353,11 @@ void FitTool::fitting_t()
 {
     double max_value = 0.0, value = 0.0;
     int max_i = 0;
+    MAX_T0 = 2 * M_PI / _w;
     for (int i = 0; i < T0_N + 1; i++)
     {
         value = get_integral((double)i * MAX_T0 / T0_N);
+        //cout<<"t0:"<<(double)i * MAX_T0 / T0_N<<"\tvalue:"<<value<<endl;
         if (value > max_value)
         {
             max_i = i;
@@ -366,6 +372,7 @@ void FitTool::clearData()
 {
     cout << "Clear Fitting Data!" << endl;
     fitting_data.clear();
+    fitting_data_w.clear();
     armor_buffer.clear();
     est_a.clear();
 }
