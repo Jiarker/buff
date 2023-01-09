@@ -63,23 +63,31 @@ bool FitTool::runNormalRune(RuneArmor armor_1, vector<cv::Point2f> &nextPosition
         if (armor_1.gyro_pose.timestamp <= 10)
             return false;
         armor_buffer.push_back(armor_1);
-        spdpredictor.initState(AngleTime(armor_1.angle, armor_1.gyro_pose.timestamp));
+        //spdpredictor.initState(AngleTime(armor_1.angle, armor_1.gyro_pose.timestamp));
         break;
     case ArmorState::SHOOT:
         if (armor_1.gyro_pose.timestamp <= 10 || armor_buffer.empty())
             return false;
         //角度处理
         armor_buffer.push_back(armor_1);
-        Kalman_predict(armor_1, armor_buffer[armor_buffer.size() - 1]);
-        if (armor_buffer.size() >= DN + 1)
+        if(armor_buffer.size() == 2)
         {
-            pushFittingData(correct_speed_time);
-            while (armor_buffer.size() > DN + 1)
-                armor_buffer.erase(armor_buffer.begin());
-            while (fitting_data.size() > 200)
-                fitting_data.erase(fitting_data.begin());
+            Kalman_init(armor_buffer[0], armor_buffer[1]);
+        }
+        else
+        {
+            Kalman_predict(armor_1, armor_buffer[armor_buffer.size() - 2]);
+            if (armor_buffer.size() >= DN + 1)
+            {
+                pushFittingData(correct_speed_time);
+                while (armor_buffer.size() > DN + 1)
+                    armor_buffer.erase(armor_buffer.begin());
+                while (fitting_data.size() > 200)
+                    fitting_data.erase(fitting_data.begin());
+            }
         }
         break;
+        
     case ArmorState::LOST:
         clearData();
         return false;
@@ -107,8 +115,8 @@ bool FitTool::runNormalRune(RuneArmor armor_1, vector<cv::Point2f> &nextPosition
 cv::Point2f FitTool::calNextPosition(cv::Point2f point, cv::Point2f org, float rotate_angle)
 {
     double radius = calDistance(point, org);
-    cv::Point2f relative_point = point - org;                                         // 鐩稿鍧愭爣
-    double relative_angle = atan2(relative_point.y, relative_point.x);                // 涓庡渾蹇冩墍鎴愯搴�
+    cv::Point2f relative_point = point - org;                                         // 鐩稿鍧濇爣
+    double relative_angle = atan2(relative_point.y, relative_point.x);                // 涓庡渾蹇冩墍鎴濊搴�
     double next_angle;
 
     //顺时针角度增大,逆时针角度减小
@@ -144,7 +152,7 @@ bool FitTool::processDataState(RuneArmor armor_1, ArmorState armor_state)
         if (armor_1.gyro_pose.timestamp <= 10)
             return false;
         armor_buffer.push_back(armor_1);
-        Kalman_init(AngleTime(armor_1.angle, armor_1.gyro_pose.timestamp));
+        //Kalman_init(AngleTime(armor_1.angle, armor_1.gyro_pose.timestamp));
 
         break;
 
@@ -153,22 +161,27 @@ bool FitTool::processDataState(RuneArmor armor_1, ArmorState armor_state)
             return false;
 
         armor_buffer.push_back(armor_1);
-        Kalman_predict(armor_1, armor_buffer[armor_buffer.size() - 1]);
-        while (armor_buffer.size() > 1 + DN)
-        {
-            uint32_t delta_time = armor_1.gyro_pose.timestamp - armor_buffer[0].gyro_pose.timestamp;
-            if (delta_time > 30)
-                armor_buffer.erase(armor_buffer.begin());
-            else if (delta_time > 5)
+        if(armor_buffer.size() == 2)
+            Kalman_init(armor_buffer[1], armor_buffer[0]);//?????????
+        else
+        {  
+          Kalman_predict(armor_1, armor_buffer[armor_buffer.size() - 1]);
+            while (armor_buffer.size() > 1 + DN)
             {
-                pushFittingData(correct_speed_time);
-                break;
+                uint32_t delta_time = armor_1.gyro_pose.timestamp - armor_buffer[0].gyro_pose.timestamp;
+                if (delta_time > 30)
+                    armor_buffer.erase(armor_buffer.begin());
+                else if (delta_time > 5)
+                {
+                    pushFittingData(correct_speed_time);
+                    break;
+                }
+                else
+                    break;
             }
-            else
-                break;
-        }
 
-        break;
+            break;
+        }
 
     case ArmorState::LOST:
         armor_buffer.clear();
@@ -319,7 +332,7 @@ void FitTool::fitting_w()
 
 void FitTool::fitting_a()
 {
-    //鎸夌収澶у皬鍒掑垎鍗犳瘮
+    //鎸夌収澶у皾鍒掑垎鍧犳瘮
     double sum = 0.0;
     sort(est_a.begin(),est_a.end());
     //int sum_i = (0 + est_a.size() - 1) * est_a.size() / 2;

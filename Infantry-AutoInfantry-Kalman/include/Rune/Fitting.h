@@ -124,11 +124,19 @@ private:
     
     /**
      *  @brief  卡尔曼滤波初始化
-     *  @param  angle_time 初始角度与时间
+     *  @param  armor_new 新得到的装甲板
+     *  @param  armor_old 旧装甲板
      */
-    float Kalman_init(AngleTime angle_time)
+    void Kalman_init(RuneArmor armor_new, RuneArmor armor_old)
     {
-        spdpredictor.initState(angle_time);
+        if(armor_new.angle - armor_old.angle < -M_PI)//Ë³Ê±Õë
+            angle_T += 1;
+        else if(armor_new.angle - armor_old.angle > M_PI)//ÄæÊ±Õë
+            angle_T -= 1;
+        double angle_init = armor_new.angle + 2*angle_T*M_PI + armor_old.angle;
+        double speed_init = (armor_new.angle + 2*angle_T*M_PI - armor_old.angle)/((double)(armor_new.gyro_pose.timestamp - armor_old.gyro_pose.timestamp)/1000.0); 
+        uint32_t time_init = (armor_new.gyro_pose.timestamp + armor_old.gyro_pose.timestamp) / 2;
+        spdpredictor.initState(angle_init, speed_init, time_init);
     };
 
     /**
