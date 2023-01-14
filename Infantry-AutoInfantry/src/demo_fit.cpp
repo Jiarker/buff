@@ -6,35 +6,20 @@
 using namespace std;
 using namespace cv;
 
-//½Çº¯Êı³ÊÖÜÆÚĞÔ±ä»¯¡£ËÙ¶ÈÄ¿±êº¯ÊıÎª£ºspd = a ?6?5 sin(?3?0 ?6?5 ?3?9) + ?3?1£¬ÆäÖĞ spd µÄµ¥Î»Îªrad/s
+//spd = a * sin[w * (t + t0)] + (2.090 - a)
+//ç§¯åˆ†åï¼šangle = -(a / w) * cons[w * (t + t0)] + (2.090 - a) * t + (a / w) * cos(w * t)
 //w:[1.884,2.000]
 //T:[3.1415,3.3350]
 //b = 2.090 - a
 //a:[0.780,1.045]
 
-//ÄâºÏÊ±¼ä£º
-//¼ÙÉè1s·¢µ¯1´Î
-//Ğ¡·ûÔ¤»÷´ò£º2s = 200 * 10ms
-//´ó·ûÔ¤»÷´ò£º4s = 400 * 10ms
-//´ó·û×î´ó×Ü»÷´òÊ±¼ä£º4 + 6 + 6 = 16s = 1600 * 10ms
+//æ›²çº¿æ‹Ÿåˆæ‰€ç”¨æ—¶é—´
+//4s = 400 * 10ms
 
-//¹Û²ì·¢ÏÖ,Ò»¸öÖÜÆÚÄÜ²É¼¯µ½µÄest_aÊı¾İ´óĞ¡Îª75~80,¹ÊÁîest_a´óĞ¡Îª80
+//ext_a()æ‰€éœ€æ•°é‡ä¸º75~80,æ­£å¥½ä¸ºä¸€å‘¨æœŸ
 
 int main()
 {
-    // FitTool fittool;
-    // ifstream fs("/home/shanzoom/PycharmProjects/TEst/data.txt");
-    // cv::RNG rng;
-
-    // double data;
-    // uint32_t time = 2e7;
-    // while (!fs.eof())
-    // {
-    //     fs >> data;
-    //     time += (10 + rng.gaussian(1));//Ã¿10ms½øĞĞÒ»´Î²ÉÑù
-    //     fittool.pushFittingData(SpeedTime(data, time));
-    // }
-    // fs.close();
     FitTool fittool;
     cv::RNG rng;
     double data;
@@ -45,20 +30,20 @@ int main()
     double w = 1.884;
     double t0 = 1.8;
 
-    //Ëæ»ú³õÊ¼»¯²ÎÊı
+    //äº§ç”Ÿéšæœºæ•°
     srand(cv::getTickCount());
     a = (rand() %(1045 - 780 + 1) + 780) * 1.0 / 1000.0;
     b = 2.090 - a;
     w = (rand() % (2000 - 1884 + 1) + 1884) * 1.0 / 1000.0;
     t0 = (rand() % (3000 - 0 + 1) + 0) * 1.0 / 1000.0;
 
-    double sum = 420;//²ÉÑùÊıÁ¿;fitting_data_w.size()³¬¹ı400¿ªÊ¼ÄâºÏ
+    double sum = 420;//fitting_data_w.size()è¶…è¿‡400æ‰èƒ½è¿›è¡Œæ‹Ÿåˆ
 
     for(int i = 0; i < sum; i++)
     {
         data = a * sin(w * (0.01 * i + t0)) + (2.090 - a);
         //time += 10;
-        time += (16 + rng.gaussian(1));//Ã¿10ms½øĞĞÒ»´Î²ÉÑù
+        time += (10 + rng.gaussian(1));
         fittool.pushFittingData(SpeedTime(data, time));
         //cout<<"speed:"<<data<<"\ttime:"<<time<<endl;
     }

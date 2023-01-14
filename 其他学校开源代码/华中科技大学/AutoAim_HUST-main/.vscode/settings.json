@@ -1,0 +1,11 @@
+{
+    "python.autoComplete.extraPaths": [
+        "/opt/ros/foxy/lib/python3.8/site-packages"
+    ],
+    "files.associations": {
+        "*.ipp": "cpp",
+        "array": "cpp",
+        "string_view": "cpp",
+        "regex": "cpp"
+    }
+}
