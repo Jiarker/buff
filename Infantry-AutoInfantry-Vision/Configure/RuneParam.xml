@@ -1,0 +1,69 @@
+<?xml version="1.0"?>
+<opencv_storage>
+
+    <!-- 相机参数-->
+    <exposure_auto>0</exposure_auto>
+    <exposure_time>5000</exposure_time> <!-- us -->
+
+    <w_auto>0</w_auto>
+    <w_red>1.98</w_red>
+    <w_green>1.0</w_green>
+    <w_blue>1.98</w_blue>
+
+    <gain_auto>0</gain_auto>
+    <gain>15</gain>
+    
+    <!-- 图像参数-->
+    <approx_epsilon>1.0</approx_epsilon>
+
+    <blue_brightness_thresh>90</blue_brightness_thresh>
+    <blue_color_thresh>30</blue_color_thresh>
+
+    <red_brightness_thresh>90</red_brightness_thresh>
+    <red_color_thresh>20</red_color_thresh>
+    <blue_red_diff>20</blue_red_diff>
+
+    <!-- 比赛 -->
+    <!--内扇叶-->
+    <min_in_vane_area>20</min_in_vane_area>
+    <max_in_vane_area>20</max_in_vane_area>
+
+    <min_in_vane_ls_ratio>20</min_in_vane_ls_ratio>
+    <max_in_vane_ls_ratio>20</max_in_vane_ls_ratio>
+
+    <min_in_vane_contour_rrect_ratio>20</min_in_vane_contour_rrect_ratio>
+    <max_in_vane_contour_rrect_ratio>20</max_in_vane_contour_rrect_ratio>
+
+    <min_in_vane_hull_num>20</min_in_vane_hull_num>
+    <max_in_vane_hull_num>20</max_in_vane_hull_num>
+
+    <in_vane_width_offset>0</in_vane_width_offset>
+
+    <!--外扇叶-->
+    <min_out_vane_area>20</min_out_vane_area>
+    <max_out_vane_area>20</max_out_vane_area>
+
+    <min_out_vane_ls_ratio>20</min_out_vane_ls_ratio>
+    <max_out_vane_ls_ratio>20</max_out_vane_ls_ratio>
+
+    <min_out_vane_contour_rrect_ratio>20</min_out_vane_contour_rrect_ratio>
+    <max_out_vane_contour_rrect_ratio>20</max_out_vane_contour_rrect_ratio>
+
+    <out_vane_width_offset>0</out_vane_width_offset>
+
+    <!--内外扇叶-->
+    <min_distance_inlongside_ratio>20</min_distance_inlongside_ratio>
+    <max_distance_inlongside_ratio>20</max_distance_inlongside_ratio>
+
+    <min_in_out_vane_angle_ratio>20</min_in_out_vane_angle_ratio>
+    <max_in_out_vane_angle_ratio>20</max_in_out_vane_angle_ratio>
+
+    <!--圆心-->
+    <min_R_in_area_ratio>20</min_R_in_area_ratio>
+    <max_R_in_area_ratio>20</max_R_in_area_ratio>
+    <min_R_to_predict_distance_ratio>20</min_R_to_predict_distance_ratio>
+    <max_R_to_predict_distance_ratio>20</max_R_to_predict_distance_ratio>
+    
+    <RtoOut_RtoIn>20</RtoOut_RtoIn>
+
+</opencv_storage>

@@ -49,13 +49,6 @@ public:
             enemy_color = COLOR::BLUE;
     }
 
-    /**
-     *  @brief  计算瞬时角速度 (armor_1 - armor_2)
-     *  @param  armor_1 新目标
-     *  @param  armor_2 老目标
-     *  @return 角速度，单位 弧度/秒
-     */
-    double calAngleSpeed(RuneArmor armor_1, RuneArmor armor_2);
 
 private:
     /**

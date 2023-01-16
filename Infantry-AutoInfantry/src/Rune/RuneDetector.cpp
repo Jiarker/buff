@@ -189,6 +189,7 @@ bool RuneDetector::calCenter(RuneArmor &t_armor)
     cv::Point2f temp_circle_center = cv::Point2f(t_armor.circle_center);
     float R_roi = t_armor.rrect.size.width > t_armor.rrect.size.height? t_armor.rrect.size.width  : t_armor.rrect.size.height;
     R_roi /= 1.7;
+    //Rect2f(左上点x坐标，右上点y坐标，长，宽)
     cv::Rect2f R_roi_rect = cv::Rect2f(temp_circle_center.x - R_roi, temp_circle_center.y - R_roi, 2 * R_roi, 2 * R_roi);
     R_roi_rect &= cv::Rect2f(cv::Point2f(0, 0), cv::Point2f(bin.cols, bin.rows));
    
