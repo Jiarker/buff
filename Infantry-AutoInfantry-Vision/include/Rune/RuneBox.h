@@ -99,11 +99,11 @@ public:
     Vane() = default;
     Vane(vector<Point> vane_contour, float approx_epsilon, float c_area);
 
-    /**
-    * @brief 调整筛选后的扇叶
-    * @param offset 宽度偏移量 
-    */
-    void VaneAdjust(float offset, int type);
+    // /**
+    // * @brief 调整筛选后的扇叶
+    // * @param offset 宽度偏移量 
+    // */
+    // void VaneAdjust(float offset, int type);
 };
 
 
@@ -116,11 +116,12 @@ public:
     Point2f r_direction;                        // 半径方向，圆心指向装甲板
 
     double roll_angle;                          // PnP解算得到的rVec roll
-    double angle;                               // 角度，单位：弧度    
+    float angle;                               // 角度，单位：弧度    
     GyroPose gyro_pose;                         // 时间戳
 
     cv::Point2f circle_center;                  // 能量机关圆心 
     Point2f points[4];                          // 返回的四个顶点
+    Point2f armor_center;                       // 装甲板圆心
 
 public:
     ~RuneArmor() = default;

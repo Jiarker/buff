@@ -46,6 +46,7 @@ public:
      */
     bool run(Mat_time _src);
 
+    //能量机关击打颜色为我方颜色
     void setEnemyColor(COLOR color)
     {
         if (color == COLOR::BLUE)

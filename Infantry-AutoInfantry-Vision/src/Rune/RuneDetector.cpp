@@ -16,7 +16,7 @@ bool RuneDetector::run(Mat_time frame)
         last_target = target;
         return true;
     }
-    cout << "NO TARGET" << endl;
+    //cout << "NO TARGET" << endl;
     if (lost_times < 100 && state != ArmorState::LOST)
     {
         state = ArmorState::FINDING;
@@ -43,20 +43,21 @@ void RuneDetector::preDeal(Mat frame)
     Mat gray_bin, color_bin;
     if (enemy_color == COLOR::BLUE)
     {
+        //cout<<"1"<<endl;
         threshold(gray, gray_bin, param.blue_brightness_thresh, 255, THRESH_BINARY);
         subtract(bgr[0], bgr[2], color_bin);
         threshold(color_bin, color_bin, param.blue_color_thresh, 255, THRESH_BINARY);
     }
     else
     {
+        //cout<<"1"<<endl;
         threshold(gray, gray_bin, param.red_brightness_thresh, 255, THRESH_BINARY);
         subtract(bgr[2], bgr[0], color_bin);
         threshold(color_bin, color_bin, param.red_color_thresh, 255, THRESH_BINARY);
     }
     bin = gray_bin & color_bin;
-
-    // Mat element = getStructuringElement(MORPH_RECT, Size(5, 5));
-    Mat element = getStructuringElement(MORPH_RECT, Size(3, 3));
+    Mat element = getStructuringElement(MORPH_RECT, Size(5, 5));
+    //Mat element = getStructuringElement(MORPH_RECT, Size(3, 3));
     dilate(bin, bin, element);
 }
 
@@ -65,13 +66,16 @@ bool RuneDetector::findRuneArmor()
     vector<vector<Point>> contours;
     vector<Vec4i> hierarchy;
     rune_armors.clear();
-
     //只检测外轮廓
     findContours(bin, contours, hierarchy, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
-    if (debug_param.debug_show_bin)
+    //if (debug_param.debug_show_bin)
     {
-        drawContours(bin, contours, -1, Scalar(0,0,255), 2, 8,hierarchy);
-        imshow("Binary", bin);
+        cout<<"size of contours:"<<contours.size()<<endl;
+        //for(int i = 0; i < contours.size(); i++)
+        Mat_time temp;
+        src.copyTo(temp);
+        drawContours(temp, contours, -1, Scalar(255,0,0), 2, 8);
+        imshow("Binary", temp);
         if (waitKey(1) == 'q')
             exit(0);
     }
@@ -84,6 +88,7 @@ bool RuneDetector::findRuneArmor()
     for(int i = 0; i < contours.size(); i++)
     {
         double contour_area = contourArea(contours[i]);
+        //cout<<"i:"<<i<<"\tarea:"<<contour_area<<endl;
         if(contour_area > param.min_in_vane_area && contour_area < param.max_in_vane_area)
             in_candidates.push_back(Vane(contours[i],param.approx_epsilon, contour_area));
         else if(contour_area > param.min_out_vane_area && contour_area < param.max_out_vane_area)
@@ -93,6 +98,9 @@ bool RuneDetector::findRuneArmor()
     //内扇叶筛选与比较
     Vane in_vane;
     int max_hull_num = 0;//同时判断in_vane是否已被赋值
+    // cout<<"<in_candidates:"<<in_candidates.size()<<"\tout_candidates:"<<out_candidates.size()<<endl;
+    // cout<<"in_hull_num:"<<in_candidates[0].hull_num<<endl;
+    // cout<<"in_vane_contour_rrect_ratio:"<<in_candidates[0].contour_rrect_ratio<<endl;
     for(int i = 0; i < in_candidates.size(); i++)
     {
         //筛选
@@ -108,7 +116,7 @@ bool RuneDetector::findRuneArmor()
         //比较(角点数)
         if(in_candidates[i].hull_num > max_hull_num)
         {
-            in_vane = in_candidates[i];
+            //in_vane = in_candidates[i];
             max_hull_num = in_candidates[i].hull_num;
         }
     }
@@ -121,6 +129,11 @@ bool RuneDetector::findRuneArmor()
     for(int i = 0; i < out_candidates.size(); i++)
     {
         //筛选
+        // cout<<"i:"<<i
+        //     <<"\tls_ratio:"<<out_candidates[i].ls_ratio
+        //     <<"\tcontour_rrect_ratio:"<<out_candidates[i].contour_rrect_ratio
+        //     <<"\thull_num:"<<out_candidates[i].hull_num
+        //     <<endl;
         if(out_candidates[i].ls_ratio < param.min_out_vane_ls_ratio ||
            out_candidates[i].ls_ratio > param.max_out_vane_ls_ratio )
             continue;
@@ -136,9 +149,13 @@ bool RuneDetector::findRuneArmor()
         //面积筛选(弃用)
         //double in_out_vane_area_ratio = in_vane.area / out_vane.area;
 
-        float distance = powf((in_vane.rrect.center.x - out_candidates[i].rrect.center.x), 2) + 
-                         powf((in_vane.rrect.center.y - out_candidates[i].rrect.center.y), 2);
-        float distance_inlongside_ratio = distance / out_vane.long_side;
+        // float distance = powf((in_vane.rrect.center.x - out_candidates[i].rrect.center.x), 2) + 
+        //                  powf((in_vane.rrect.center.y - out_candidates[i].rrect.center.y), 2);
+        float distance = calDistance(in_candidates[0].rrect.center,out_candidates[i].rrect.center);
+        float distance_inlongside_ratio = distance / max(in_candidates[0].rrect.size.height,in_candidates[0].rrect.size.width);
+        cout<<"i:"<<i<<"max:"<<max(in_candidates[0].rrect.size.height,in_candidates[0].rrect.size.width)
+            <<"\tdistance_inlongside_ratio:"<<distance_inlongside_ratio
+            <<"\tdistance:"<<distance<<endl;
         if(distance_inlongside_ratio < param.min_distance_inlongside_ratio ||
            distance_inlongside_ratio > param.max_distance_inlongside_ratio)
            continue;

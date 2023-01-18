@@ -127,7 +127,7 @@ void show_armor_result(Mat src, RuneDetector detector, std::vector<cv::Point2f> 
             line(show_img, pts[i], pts[(i + 1) % pts.size()], Scalar(0, 0, 255));
             circle(show_img, pts[i], 2 * (i + 1), Scalar(0, 0, 255), -1);
         }
-        circle(show_img, temp.circle_center, calDistance(temp.circle_center, temp.rrect.center), Scalar(255, 0, 0));    // 大符轨迹
+        circle(show_img, temp.circle_center, calDistance(temp.circle_center, temp.armor_center), Scalar(255, 0, 0));    // 大符轨迹
         
         if (debug_param.show_pnp)
         {
@@ -139,7 +139,7 @@ void show_armor_result(Mat src, RuneDetector detector, std::vector<cv::Point2f> 
             {
                 text += "\nDistance: " + to_string(detector.solver.distance);
             }
-            putText(show_img, text, temp.rrect.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 0, 255));
+            putText(show_img, text, temp.circle_center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 0, 255));
         }
 
         if (debug_param.show_predict)

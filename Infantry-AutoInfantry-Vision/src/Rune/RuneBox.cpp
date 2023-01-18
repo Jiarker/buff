@@ -84,45 +84,48 @@ Vane::Vane(vector<Point> vane_contour, float vane_epsilon, float c_area)
     contour_rrect_ratio = contour_area / rrect.size.area();
 }
 
-void Vane::VaneAdjust(float offset, int type)
-{
-    if(type == IN_VANE)//内扇叶修改小边
-    {
-        if(rrect.size.width > rrect.size.height)
-        {
-            if(rrect.size.height - offset > 0)
-                rrect.size.height -= offset;
-            else
-                cout<<"offset太大！！！";
-        }
-        else
-        {
-            if(rrect.size.width - offset > 0)
-                rrect.size.width -= offset;
-            else
-                cout<<"offset太大！！！";                
-        }
-    }
-    else//外扇叶修改外边
-    {
-        if(rrect.size.width > rrect.size.height)
-        {
-            if(rrect.size.width - offset > 0)
-                rrect.size.width -= offset;
-            else
-                cout<<"offset太大！！！";
-        }
-        else
-        {
-            if(rrect.size.height - offset > 0)
-                rrect.size.height -= offset;
-            else
-                cout<<"offset太大！！！";                
-        }
-    }
-    //返回四个顶点
-    rrect.points(points);
-}
+// void Vane::VaneAdjust(float offset, int type)
+// {
+//     if(type == IN_VANE)//内扇叶修改小边
+//     {
+//         if(rrect.size.width > rrect.size.height)
+//         {
+//             if(rrect.size.height - offset > 0)
+//                 rrect.size.height -= offset;
+//             else
+//                 cout<<"offset太大！！！";
+//         }
+//         else
+//         {
+//             if(rrect.size.width - offset > 0)
+//                 rrect.size.width -= offset;
+//             else
+//                 cout<<"offset太大！！！";                
+//         }
+//     }
+//     else//外扇叶修改外边
+//     {
+//         if(rrect.size.width > rrect.size.height)
+//         {
+//             if(rrect.size.width - offset > 0)
+//                 rrect.size.width -= offset;
+//             else
+//                 cout<<"offset太大！！！";
+//         }
+//         else
+//         {
+//             if(rrect.size.height - offset > 0)
+//                 rrect.size.height -= offset;
+//             else
+//                 cout<<"offset太大！！！";                
+//         }
+//     }
+//     //修改内扇叶宽度
+    
+
+//     //返回四个顶点
+//     rrect.points(points);
+// }
 
 RuneArmor::RuneArmor(Vane in, Vane out, GyroPose _gyro_pose, RuneParam param)
 {
@@ -140,8 +143,18 @@ RuneArmor::RuneArmor(Vane in, Vane out, GyroPose _gyro_pose, RuneParam param)
     if(angle < 0)
         angle += 2 * CV_PI;
 
-    in_vane.VaneAdjust(param.approx_epsilon,IN_VANE);
-    out_vane.VaneAdjust(param.approx_epsilon,OUT_VANE);
+    // in_vane.VaneAdjust(param.approx_epsilon,IN_VANE);
+    // out_vane.VaneAdjust(param.approx_epsilon,OUT_VANE);
+
+    //修改外扇叶宽度
+    if(out_vane.rrect.size.height > out_vane.rrect.size.width)
+        out_vane.rrect.size.width = in_vane.long_side;
+    else
+        out_vane.rrect.size.height= in_vane.long_side;
+    
+    //返回扇叶四个定点
+    in_vane.rrect.points(in_vane.points);
+    out_vane.rrect.points(out_vane.points);
 
     //通过angle判断所处象限，进而返回对应角度
     //因后续卡尔曼滤波会改变angle,故在此先计算四点
@@ -173,8 +186,10 @@ RuneArmor::RuneArmor(Vane in, Vane out, GyroPose _gyro_pose, RuneParam param)
         points[2] = in_vane.points[3];
         points[3] = in_vane.points[2];
     }
-}
 
+    //计算装甲板圆心
+    armor_center = (points[0] + points[1] + points[2] + points[3]) / 4;
+}
 
 void RuneArmor::getPoints(vector<cv::Point2f>& pts)
 {
