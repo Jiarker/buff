@@ -2,6 +2,7 @@
 
 bool RuneDetector::run(Mat_time frame)
 {
+    //cout<<endl;
     frame.copyTo(src);
     target = RuneArmor();
     preDeal(frame);
@@ -125,6 +126,7 @@ bool RuneDetector::findRuneArmor()
         vector<Point>hull;
         approxPolyDP(in_candidates[i], hull, param.approx_epsilon*4, true);
         float hull_num = hull.size();
+        //cout<<"hull_num:"<<hull_num<<endl;
         if(hull_num < param.min_in_vane_hull_num ||
            hull_num > param.max_in_vane_hull_num)
            continue;
@@ -140,6 +142,7 @@ bool RuneDetector::findRuneArmor()
         return false;
 
     //外扇叶筛选与比较
+    //cout<<endl;
     Vane out_vane;
     float min_distance = 999999.0;//同时判断out_vane是否已被赋值
     for(int i = 0; i < out_candidates.size(); i++)
@@ -169,17 +172,16 @@ bool RuneDetector::findRuneArmor()
 
         float distance = calDistance(in_vane.rrect.center, c_rrect.center);
         float distance_inlongside_ratio = distance / in_vane.long_side;
-        // cout<<"i:"<<i<<"long_side:"<<long_side
-        //     <<"\tdistance_inlongside_ratio:"<<distance_inlongside_ratio
-        //     <<"\tdistance:"<<distance<<endl;
+        //cout<<"i:"<<i<<"\tdistance_inlongside_ratio:"<<distance_inlongside_ratio<<endl;
         if(distance_inlongside_ratio < param.min_distance_inlongside_ratio ||
            distance_inlongside_ratio > param.max_distance_inlongside_ratio)
            continue;
 
-        float angle_ratio = in_vane.rrect.angle / c_rrect.angle;
-        //cout<<"angle_ratio:"<<angle_ratio<<endl;
-        if(angle_ratio < param.min_in_out_vane_angle_ratio || 
-           angle_ratio > param.max_in_out_vane_angle_ratio )
+        float derta_angle = fabs(in_vane.rrect.angle - c_rrect.angle);
+        //cout<<"derta_angle:"<<derta_angle<<endl;
+        //在x或y轴时角度会突变
+        if(derta_angle > param.max_in_out_vane_derta_angle && 
+           derta_angle < CV_PI / 2 - param.max_in_out_vane_derta_angle )
            continue;
 
         if(distance < min_distance)

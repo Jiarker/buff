@@ -147,34 +147,30 @@ bool FitTool::processDataState(RuneArmor armor_1, ArmorState armor_state)
             return false;
 
         armor_buffer.push_back(armor_1);
-        while (armor_buffer.size() > 1 + DN)
+        if(armor_buffer.size() == 2 && !is_Kalman_init)
         {
-            uint32_t delta_time = armor_1.gyro_pose.timestamp - armor_buffer[0].gyro_pose.timestamp;
-            if (delta_time > 30)
-                armor_buffer.erase(armor_buffer.begin());
-            else if (delta_time > 5)
-            {
-                pushFittingData(SpeedTime(calAngleSpeed(armor_1, armor_buffer[0]), 
-                                            (armor_1.gyro_pose.timestamp + armor_buffer[0].gyro_pose.timestamp) / 2));
-                break;
-            }
-            else
-                break;
+            Kalman_init(armor_buffer[1], armor_buffer[0]);
+            is_Kalman_init = true;
         }
-
-        // if (armor_buffer.size() < DN + 1)
-        // {
-        //     armor_buffer.push_back(armor_1);
-        // }
-        // else if (armor_1.gyro_pose.timestamp - armor_buffer[armor_buffer.size() - 1 - DN].gyro_pose.timestamp > 5)
-        // {
-        //     armor_buffer.push_back(armor_1);
-        //     pushFittingData(SpeedTime(calAngleSpeed(armor_1, armor_buffer[armor_buffer.size() - 1 - DN]), 
-        //                                     (armor_1.gyro_pose.timestamp + armor_buffer[armor_buffer.size() - 1 - DN].gyro_pose.timestamp) / 2));
-
-        //     while (armor_buffer.size() > DN + 1)
-        //         armor_buffer.erase(armor_buffer.begin());
-        // }
+        else
+        {
+            Kalman_predict(armor_1);
+            //选出时间间隔在(5, 30)的角度并对其求速度
+            while (armor_buffer.size() > 1 + DN)
+            {
+                uint32_t delta_time = armor_1.gyro_pose.timestamp - armor_buffer[0].gyro_pose.timestamp;
+                if (delta_time > 30)
+                    armor_buffer.erase(armor_buffer.begin());
+                else if (delta_time > 5)
+                {
+                    pushFittingData(SpeedTime(calAngleSpeed(armor_1, armor_buffer[0]), 
+                                                (armor_1.gyro_pose.timestamp + armor_buffer[0].gyro_pose.timestamp) / 2));
+                    break;
+                }
+                else
+                    break;
+            }
+        }
         break;
 
     case ArmorState::LOST:
@@ -195,6 +191,7 @@ bool FitTool::processDataState(RuneArmor armor_1, ArmorState armor_state)
 
 void FitTool::pushFittingData(SpeedTime new_data)
 {
+    //cout<<"Speed:"<<new_data.angle_speed<<"\ttime:"<<new_data.time<<endl;
     fitting_data.push_back(new_data);
     
     double temp_a = (2.090 - new_data.angle_speed) / 2; 
@@ -215,6 +212,7 @@ void FitTool::pushFittingData(SpeedTime new_data)
     SpeedTime flag_data = fitting_data_w[fitting_data_w.size() - 1];//朢�新数捄1�7
     if ((double)new_data.time - (double)flag_data.time - DT * 1000.0 < 0)//两帧之间时间间隔小于采样时间
     {
+        cout<<"None"<<endl;
         return;
     }
 
@@ -243,12 +241,12 @@ void FitTool::pushFittingData(SpeedTime new_data)
 
 void FitTool::initDirection()
 {
-    if (fitting_data_w.size() >= 50)
+    if (fitting_data.size() >= 50)
     {
         int clock = 0, clock_inv = 0;
-        for (int i = 0; i < fitting_data_w.size(); i++)
+        for (int i = 0; i < fitting_data.size(); i++)
         {
-            if (fitting_data_w[i].angle_speed > 0)
+            if (fitting_data[i].angle_speed > 0)
                 clock++;
             else
                 clock_inv++;
@@ -260,6 +258,8 @@ void FitTool::initDirection()
 
 void FitTool::clearArmorBuffer()
 {
+    is_Kalman_init = false;
+    angle_T = 0;
     armor_buffer.clear();
 }
 
@@ -310,7 +310,7 @@ void FitTool::fitting_w()
     for (int i = n_min + 1; i < n_max; i++)
     {
         value = get_F(i, N);
-        cout<<"value:"<<value<<endl;
+        //cout<<"value:"<<value<<endl;
         if (value > max_value)
         {
             max_i = (double)i;
@@ -375,9 +375,35 @@ void FitTool::clearData()
     fitting_data_w.clear();
     armor_buffer.clear();
     est_a.clear();
+    is_Kalman_init = false;
+    angle_T = 0;
+    is_direction_inited = false;
 }
 
 FitTool::FitTool(uint32_t _start_time)
 {
     start_time = _start_time;
 }
+
+void FitTool::Kalman_predict(RuneArmor armor_new)
+{
+    if(armor_new.angle - last_angle_time.angle < -M_PI)//顺时针旋转引起角度突变
+        angle_T += 1;
+    else if(armor_new.angle - last_angle_time.angle > M_PI)//逆时针旋转引起角度突变
+        angle_T -= 1;
+    double correct_angle = spdpredictor.predict(armor_new.angle + 2*M_PI*angle_T, armor_new.gyro_pose.timestamp);
+    armor_new.angle = correct_angle;
+}
+
+void FitTool::Kalman_init(RuneArmor armor_new, RuneArmor armor_old)
+{
+    if(armor_new.angle - armor_old.angle < -M_PI)//顺时针旋转引起角度突变
+        angle_T += 1;
+    else if(armor_new.angle - armor_old.angle > M_PI)//逆时针旋转引起角度突变
+        angle_T -= 1;
+    double angle_init = armor_new.angle + 2*angle_T*M_PI + armor_old.angle;
+    double speed_init = (armor_new.angle + 2*angle_T*M_PI - armor_old.angle)/((double)(armor_new.gyro_pose.timestamp - armor_old.gyro_pose.timestamp)/1000.0); 
+    uint32_t time_init = (armor_new.gyro_pose.timestamp + armor_old.gyro_pose.timestamp) / 2;
+    spdpredictor.initState(angle_init, speed_init, time_init);
+    last_angle_time = AngleTime(angle_init, time_init);
+};

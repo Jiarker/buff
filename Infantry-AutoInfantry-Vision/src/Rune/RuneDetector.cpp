@@ -2,6 +2,7 @@
 
 bool RuneDetector::run(Mat_time frame)
 {
+    //cout<<endl;
     frame.copyTo(src);
     target = RuneArmor();
     preDeal(frame);
@@ -9,10 +10,8 @@ bool RuneDetector::run(Mat_time frame)
     {
         calCenter(target);
         setFoundState();
-
         std::vector<cv::Point2f> pts;
         target.getPoints(pts);
-
         last_target = target;
         return true;
     }
@@ -70,29 +69,28 @@ bool RuneDetector::findRuneArmor()
     findContours(bin, contours, hierarchy, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
     //if (debug_param.debug_show_bin)
     {
-        cout<<"size of contours:"<<contours.size()<<endl;
-        //for(int i = 0; i < contours.size(); i++)
+        //cout<<"size of contours:"<<contours.size()<<endl;
         Mat_time temp;
         src.copyTo(temp);
         drawContours(temp, contours, -1, Scalar(255,0,0), 2, 8);
-        imshow("Binary", temp);
-        if (waitKey(1) == 'q')
-            exit(0);
+        // imshow("Binary", temp);
+        // if (waitKey(1) == 'q')
+        //     exit(0);
     }
     if(contours.size() == 0)
         return false;
 
     //通过面积筛选内外扇叶
-    vector<Vane>in_candidates;
-    vector<Vane>out_candidates;
+    vector<vector<Point>>in_candidates;
+    vector<vector<Point>>out_candidates;
     for(int i = 0; i < contours.size(); i++)
     {
         double contour_area = contourArea(contours[i]);
         //cout<<"i:"<<i<<"\tarea:"<<contour_area<<endl;
         if(contour_area > param.min_in_vane_area && contour_area < param.max_in_vane_area)
-            in_candidates.push_back(Vane(contours[i],param.approx_epsilon, contour_area));
+            in_candidates.push_back(contours[i]);
         else if(contour_area > param.min_out_vane_area && contour_area < param.max_out_vane_area)
-            out_candidates.push_back(Vane(contours[i],param.approx_epsilon, contour_area));
+            out_candidates.push_back(contours[i]);
     }
 
     //内扇叶筛选与比较
@@ -103,27 +101,48 @@ bool RuneDetector::findRuneArmor()
     // cout<<"in_vane_contour_rrect_ratio:"<<in_candidates[0].contour_rrect_ratio<<endl;
     for(int i = 0; i < in_candidates.size(); i++)
     {
+        
         //筛选
-        if(in_candidates[i].ls_ratio < param.min_in_vane_ls_ratio ||
-           in_candidates[i].ls_ratio > param.max_in_vane_ls_ratio )
+        //长宽
+        //cout<<contourArea(in_candidates[i])<<endl;
+        RotatedRect c_rrect = minAreaRect(in_candidates[i]);
+        float long_side = max(c_rrect.size.width, c_rrect.size.height);
+        float short_side = min(c_rrect.size.width, c_rrect.size.height);
+        //cout<<long_side<<"   "<<short_side<<endl;
+        float ls_ratio = long_side / short_side;
+        //cout<<"ls_ratio:"<<ls_ratio<<endl;
+        if(ls_ratio < param.min_in_vane_ls_ratio ||
+           ls_ratio > param.max_in_vane_ls_ratio )
             continue;
-        if(in_candidates[i].contour_rrect_ratio < param.min_in_vane_contour_rrect_ratio ||
-           in_candidates[i].contour_rrect_ratio > param.max_in_vane_contour_rrect_ratio)
+
+        //cout<<"1.2"<<endl;
+        float c_area = contourArea(in_candidates[i]);
+        float contour_rrect_ratio = c_area / c_rrect.size.area();
+        //cout<<"contour_rrect_ratio:"<<contour_rrect_ratio<<endl;
+        if(contour_rrect_ratio < param.min_in_vane_contour_rrect_ratio ||
+           contour_rrect_ratio > param.max_in_vane_contour_rrect_ratio)
            continue;
-        if(in_candidates[i].hull_num < param.min_in_vane_hull_num ||
-           in_candidates[i].hull_num > param.max_in_vane_hull_num)
+        //cout<<"1.3"<<endl;
+        vector<Point>hull;
+        approxPolyDP(in_candidates[i], hull, param.approx_epsilon*4, true);
+        float hull_num = hull.size();
+        //cout<<"hull_num:"<<hull_num<<endl;
+        if(hull_num < param.min_in_vane_hull_num ||
+           hull_num > param.max_in_vane_hull_num)
            continue;
         //比较(角点数)
-        if(in_candidates[i].hull_num > max_hull_num)
+        //cout<<"1.4"<<endl;
+        if(hull_num > max_hull_num)
         {
-            //in_vane = in_candidates[i];
-            max_hull_num = in_candidates[i].hull_num;
+            in_vane = Vane(c_rrect, long_side, short_side);
+            max_hull_num = hull_num;
         }
     }
     if(max_hull_num == 0)
         return false;
 
     //外扇叶筛选与比较
+    //cout<<endl;
     Vane out_vane;
     float min_distance = 999999.0;//同时判断out_vane是否已被赋值
     for(int i = 0; i < out_candidates.size(); i++)
@@ -134,49 +153,51 @@ bool RuneDetector::findRuneArmor()
         //     <<"\tcontour_rrect_ratio:"<<out_candidates[i].contour_rrect_ratio
         //     <<"\thull_num:"<<out_candidates[i].hull_num
         //     <<endl;
-        if(out_candidates[i].ls_ratio < param.min_out_vane_ls_ratio ||
-           out_candidates[i].ls_ratio > param.max_out_vane_ls_ratio )
+        RotatedRect c_rrect = minAreaRect(out_candidates[i]);
+        //长宽
+        float long_side = max(c_rrect.size.width, c_rrect.size.height);
+        float short_side = min(c_rrect.size.width, c_rrect.size.height);
+        float ls_ratio = long_side / short_side;
+        //cout<<"ls_ratio:"<<ls_ratio<<endl;
+        if(ls_ratio < param.min_out_vane_ls_ratio ||
+           ls_ratio > param.max_out_vane_ls_ratio )
             continue;
-        if(out_candidates[i].contour_rrect_ratio < param.min_out_vane_contour_rrect_ratio ||
-           out_candidates[i].contour_rrect_ratio > param.max_out_vane_contour_rrect_ratio)
+
+        float c_area = contourArea(out_candidates[i]);
+        float contour_rrect_ratio = c_area / c_rrect.size.area();   
+        //cout<<"contour_rrect_ratio:"<<contour_rrect_ratio<<endl;
+        if(contour_rrect_ratio < param.min_out_vane_contour_rrect_ratio ||
+           contour_rrect_ratio > param.max_out_vane_contour_rrect_ratio)
            continue;
 
-        //角点筛选
-        // if(out_candidates[i].hull_num < param.min_out_vane_hull_num ||
-        //    out_candidates[i].hull_num > param.max_out_vane_hull_num)
-        //    continue;
-
-        //面积筛选(弃用)
-        //double in_out_vane_area_ratio = in_vane.area / out_vane.area;
-
-        // float distance = powf((in_vane.rrect.center.x - out_candidates[i].rrect.center.x), 2) + 
-        //                  powf((in_vane.rrect.center.y - out_candidates[i].rrect.center.y), 2);
-        float distance = calDistance(in_candidates[0].rrect.center,out_candidates[i].rrect.center);
-        float distance_inlongside_ratio = distance / max(in_candidates[0].rrect.size.height,in_candidates[0].rrect.size.width);
-        cout<<"i:"<<i<<"max:"<<max(in_candidates[0].rrect.size.height,in_candidates[0].rrect.size.width)
-            <<"\tdistance_inlongside_ratio:"<<distance_inlongside_ratio
-            <<"\tdistance:"<<distance<<endl;
+        float distance = calDistance(in_vane.rrect.center, c_rrect.center);
+        float distance_inlongside_ratio = distance / in_vane.long_side;
+        //cout<<"i:"<<i<<"\tdistance_inlongside_ratio:"<<distance_inlongside_ratio<<endl;
         if(distance_inlongside_ratio < param.min_distance_inlongside_ratio ||
            distance_inlongside_ratio > param.max_distance_inlongside_ratio)
            continue;
 
-        float angle_ratio = in_vane.rrect.angle / out_candidates[i].rrect.angle;
-        if(angle_ratio < param.min_in_out_vane_angle_ratio || 
-           angle_ratio > param.max_in_out_vane_angle_ratio )
+        float derta_angle = fabs(in_vane.rrect.angle - c_rrect.angle);
+        //cout<<"derta_angle:"<<derta_angle<<endl;
+        //在x或y轴时角度会突变
+        if(derta_angle > param.max_in_out_vane_derta_angle && 
+           derta_angle < CV_PI / 2 - param.max_in_out_vane_derta_angle )
            continue;
 
         if(distance < min_distance)
         {
-            out_vane = out_candidates[i];
+            out_vane = Vane(c_rrect, short_side, long_side);
             min_distance = distance;
         }
     }
     if(min_distance == 999999.0)
         return false;
     
+    //cout<<"OK"<<endl;
     //模板匹配(待定)
     //moduleCmpare(in_vane,out_vane);
     target = RuneArmor(in_vane, out_vane, src.gyro_pose, param);
+    return true;
 }
 
 bool RuneDetector::calCenter(RuneArmor &t_armor)
@@ -213,7 +234,7 @@ bool RuneDetector::calCenter(RuneArmor &t_armor)
     for (int i = 0; i < contours.size(); i++)
     {
         double area = contourArea(contours[i]);
-        if (area / t_armor.in_vane.area < param.min_R_in_area_ratio)
+        if (area / t_armor.in_vane.rrect.size.area() < param.min_R_in_area_ratio)
             continue;
         if (area > max_area)
         {

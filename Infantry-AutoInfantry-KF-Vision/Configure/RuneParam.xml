@@ -39,7 +39,7 @@
     <max_in_vane_contour_rrect_ratio>0.28</max_in_vane_contour_rrect_ratio>
 
     <!--60-->
-    <min_in_vane_hull_num>50</min_in_vane_hull_num>
+    <min_in_vane_hull_num>40</min_in_vane_hull_num>
     <max_in_vane_hull_num>75</max_in_vane_hull_num>
 
     <!--外扇叶-->
@@ -60,8 +60,7 @@
     <min_distance_inlongside_ratio>0.7</min_distance_inlongside_ratio>
     <max_distance_inlongside_ratio>1.3</max_distance_inlongside_ratio>
 
-    <min_in_out_vane_angle_ratio>0.8</min_in_out_vane_angle_ratio>
-    <max_in_out_vane_angle_ratio>1.2</max_in_out_vane_angle_ratio>
+    <max_in_out_vane_derta_angle>7</max_in_out_vane_derta_angle>
 
     <!--圆心-->
     <min_R_in_area_ratio>20</min_R_in_area_ratio>
@@ -72,5 +71,29 @@
     <RtoOut_RtoIn>1.95</RtoOut_RtoIn>
 
     <max_diff_distance_ratio>0.5</max_diff_distance_ratio>
+
+    <!-- Kalman参数-->
+
+    <kalman_spd_Q type_id="opencv-matrix">  <!-- Q 过程噪声-->
+    <rows>2</rows>
+    <cols>2</cols>
+    <dt>f</dt>
+    <data>
+        500000. 0.   <!-- 1-->
+        0. 500000.
+    </data>
+        
+    </kalman_spd_Q>
+
+    <!--值越大,变化趋势越趋于稳定-->
+    <kalman_spd_R type_id="opencv-matrix">  <!-- R 测量噪声(角度angle)-->
+    <rows>1</rows>
+    <cols>1</cols>
+    <dt>f</dt>
+    <data>
+       0.09
+
+    </data>
+    </kalman_spd_R>
 
 </opencv_storage>

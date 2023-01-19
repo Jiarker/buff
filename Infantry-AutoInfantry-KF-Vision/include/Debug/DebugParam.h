@@ -20,7 +20,7 @@ public:
     bool show_ID = true;
     bool show_predict = true;
 
-    bool debug_show_bin = true;
+    bool debug_show_bin = false;
     bool debug_show_light = false;
     bool debug_classifier = false;
 public:

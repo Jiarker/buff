@@ -56,8 +56,9 @@ typedef struct RuneParam
     float min_distance_inlongside_ratio;         //  内外扇叶中心点距离 / 内扇叶长边
     float max_distance_inlongside_ratio; 
 
-    float min_in_out_vane_angle_ratio;           //  旋转角度比
-    float max_in_out_vane_angle_ratio;
+    float max_in_out_vane_derta_angle;           //  旋转角度差，注意在x或y轴时角度突变
+                                                 //  两不同扇叶间夹角为72度
+                                                 //  旋转外接矩形夹角是角度制，圆心到外扇叶与x轴夹角为弧度制
 
     //圆心
     //暂时不对最大距离进行判断
@@ -89,12 +90,6 @@ public:
         short_side = s_side;
         long_side = l_side;
     };
-
-    // /**
-    // * @brief 调整筛选后的扇叶
-    // * @param offset 宽度偏移量 
-    // */
-    // void VaneAdjust(float offset, int type);
 };
 
 
@@ -110,7 +105,7 @@ public:
     GyroPose gyro_pose;                         // 时间戳
 
     cv::Point2f circle_center;                  // 能量机关圆心 
-    Point2f points[4];                          // 返回的四个顶点
+    vector<Point2f> points;                          // 返回的四个顶点
     Point2f armor_center;                       // 装甲板圆心
 
 public:
@@ -118,11 +113,28 @@ public:
     RuneArmor() = default;
     RuneArmor(Vane in_vane, Vane out_vane, GyroPose _gyro_pose, RuneParam param);
 
-   /**
-    *  @brief  获取四个角点，顺时针顺序
+    /**
+    *  @brief   获取四个角点，顺时针顺序
+    * @param    pts 接收装甲板四顶点
     */ 
     void getPoints(vector<cv::Point2f>& pts);
 
+private:
+    /**
+     * @brief   将距离vane1中心最短的vane2外接矩形两顶点返回给points
+     * @param   vane1   提供中心
+     * @param   vane2   提供顶点 
+    */
+   void getPoints_first(Vane vane1, Vane vane2);
+
+   /**
+    * @brief    交换定点位置
+    * @param    point1  
+    * @param    point2
+    * @param    type    扇叶类型
+   */
+   void exchange(Point2f &point1, Point2f &point2, int type);
 };
+
 
 #endif

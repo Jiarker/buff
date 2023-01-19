@@ -9,7 +9,7 @@ using namespace cv;
 
 #define RATIO 2
 
-#define ISVIDEO 100 //30为正常转速，0为静止
+#define ISVIDEO 150 //30为正常转速，0为静止
 
 
 int main()

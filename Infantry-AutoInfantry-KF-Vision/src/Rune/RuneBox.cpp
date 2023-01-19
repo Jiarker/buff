@@ -40,8 +40,7 @@ RuneParam::RuneParam()
     fs["min_distance_inlongside_ratio"] >> min_distance_inlongside_ratio;
     fs["max_distance_inlongside_ratio"] >> max_distance_inlongside_ratio;
 
-    fs["min_in_out_vane_angle_ratio"] >> min_in_out_vane_angle_ratio;
-    fs["max_in_out_vane_angle_ratio"] >> max_in_out_vane_angle_ratio;
+    fs["max_in_out_vane_derta_angle"] >> max_in_out_vane_derta_angle;
 
     //圆心
     fs["min_R_in_area_ratio"] >> min_R_in_area_ratio;
@@ -70,58 +69,92 @@ RuneArmor::RuneArmor(Vane in, Vane out, GyroPose _gyro_pose, RuneParam param)
     //角度转换 
     if(angle < 0)
         angle += 2 * CV_PI;
+    //cout<<"angle:"<<angle<<endl;
+}
 
-    // in_vane.VaneAdjust(param.approx_epsilon,IN_VANE);
-    // out_vane.VaneAdjust(param.approx_epsilon,OUT_VANE);
-
+void RuneArmor::getPoints(vector<cv::Point2f>& pts)
+{
     //修改内扇叶宽度
     if(in_vane.rrect.size.height > in_vane.rrect.size.width)
         in_vane.rrect.size.width = out_vane.long_side;
     else
         in_vane.rrect.size.height= out_vane.long_side;
     
-    //返回扇叶四个定点
+    //返回扇叶四个顶点
     in_vane.rrect.points(in_vane.points);
     out_vane.rrect.points(out_vane.points);
 
-    //通过angle判断所处象限，进而返回对应角度
-    //因后续卡尔曼滤波会改变angle,故在此先计算四点
-    cout<<"angle:"<<angle<<endl;
-    if(0 <= angle && angle < CV_PI / 2)
-    {
-        points[0] = out_vane.points[1];
-        points[1] = out_vane.points[0];
-        points[2] = in_vane.points[3];
-        points[3] = in_vane.points[2];
-    }
-    else if(CV_PI / 2 <= angle && angle <= CV_PI)
-    {
-        points[0] = out_vane.points[2];
-        points[1] = out_vane.points[1];
-        points[2] = in_vane.points[0];
-        points[3] = in_vane.points[3];
-    }
-    else if(CV_PI <= angle && angle <= 3 * CV_PI / 2)
-    {
-        points[0] = out_vane.points[3];
-        points[1] = out_vane.points[2];
-        points[2] = in_vane.points[1];
-        points[3] = in_vane.points[0];
-    }
-    else if(3 * CV_PI / 2 <= angle && angle < CV_PI * 2)
-    {
-        points[0] = out_vane.points[0];
-        points[1] = out_vane.points[3];
-        points[2] = in_vane.points[2];
-        points[3] = in_vane.points[1];
-    }
+    //初步得到装甲板四个顶点
+    getPoints_first(in_vane, out_vane);
+    getPoints_first(out_vane, in_vane);
 
     //计算装甲板圆心
     armor_center = (points[0] + points[1] + points[2] + points[3]) / 4;
-}
 
-void RuneArmor::getPoints(vector<cv::Point2f>& pts)
-{
+    exchange(points[0], points[1], OUT_VANE);
+    exchange(points[2], points[3], IN_VANE);
+
     for(int i = 0; i < 4; i++)
         pts.push_back(points[i]);
+}
+
+void RuneArmor::getPoints_first(Vane vane1, Vane vane2)
+{
+    //找外扇叶两点，即距离内扇叶中心最近的外扇叶外接矩形两顶点
+    int min_1_i = 0, min_2_i = 0;
+    float min_1_distance = 999999, min_2_distance = 999999;
+    for(int i = 0; i < 4; i++)
+    {
+        float distance = calDistance(vane1.rrect.center, vane2.points[i]);
+        //cout<<"i:"<<i<<"\tdistance:"<<distance<<endl;
+        if(distance < min_1_distance)
+        {
+            //注意覆盖问题
+            min_2_i = min_1_i;
+            min_2_distance = min_1_distance;
+            min_1_distance = distance;
+            min_1_i = i;
+        }
+        else if(distance < min_2_distance)
+        {
+            min_2_distance = distance;
+            min_2_i = i;
+        }
+    }
+    // cout<<"min_1_i:"<<min_1_i<<"\tdistance:"<<min_1_distance<<endl;
+    // cout<<"min_2_i:"<<min_2_i<<"\tdistance:"<<min_2_distance<<endl;
+    // cout<<endl;
+    points.push_back(vane2.points[min_1_i]);
+    points.push_back(vane2.points[min_2_i]);
+}
+
+void RuneArmor::exchange(Point2f &point1, Point2f &point2, int type)
+{
+    //得到以装甲板圆心为起点，装甲板四顶点为终点的矢量
+    Point2f temp_point;
+    temp_point = point1 - armor_center; 
+    float temp_angle = atan2(temp_point.y, temp_point.x);
+    //得到从x轴旋转至矢量的角度
+    if(temp_angle < 0)
+        temp_angle += 2 * CV_PI;
+    //得到r_direction旋转至矢量的角度，为正顺时针，为负逆时针
+    temp_angle -= angle;
+    if(temp_angle > CV_PI)
+        temp_angle -= 2 * CV_PI;
+    else if(temp_angle < -CV_PI)
+        temp_angle += 2 * CV_PI;
+
+    if(temp_angle > 0 && type == OUT_VANE)
+    {
+        Point2f temp_point = point1;
+        point1 = point2;
+        point2 = temp_point;
+    }    
+
+    else if(temp_angle < 0 && type == IN_VANE)
+    {
+        Point2f temp_point = point1;
+        point1 = point2;
+        point2 = temp_point;
+    }   
 }
