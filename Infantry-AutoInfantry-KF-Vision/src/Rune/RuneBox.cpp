@@ -69,7 +69,8 @@ RuneArmor::RuneArmor(Vane in, Vane out, GyroPose _gyro_pose, RuneParam param)
     //角度转换 
     if(angle < 0)
         angle += 2 * CV_PI;
-    //cout<<"angle:"<<angle<<endl;
+    // angle = angle / CV_PI * 180;
+    // cout<<"angle:"<<angle<<endl;
 }
 
 void RuneArmor::getPoints(vector<cv::Point2f>& pts)

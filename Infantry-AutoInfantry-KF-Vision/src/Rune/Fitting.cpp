@@ -67,14 +67,23 @@ bool FitTool::runNormalRune(RuneArmor armor_1, vector<cv::Point2f> &nextPosition
         if (armor_1.gyro_pose.timestamp <= 10)
             return false;
         armor_buffer.push_back(armor_1);
-        if (armor_buffer.size() >= DN + 1)
+        if(armor_buffer.size() == 2 && !is_Kalman_init)
         {
-            pushFittingData(SpeedTime(calAngleSpeed(armor_1, armor_buffer[armor_buffer.size() - 1 - DN]), 
-                                        (armor_1.gyro_pose.timestamp + armor_buffer[armor_buffer.size() - 1 - DN].gyro_pose.timestamp) / 2));
-            while (armor_buffer.size() > DN + 1)
-                armor_buffer.erase(armor_buffer.begin());
-            while (fitting_data_w.size() > 200)
-                fitting_data_w.erase(fitting_data_w.begin());
+            Kalman_init(armor_buffer[1], armor_buffer[0]);
+            is_Kalman_init = true;
+        }
+        else
+        {        
+            Kalman_predict(armor_1);
+            if (armor_buffer.size() >= DN + 1)
+            {
+                pushFittingData(SpeedTime(calAngleSpeed(armor_1, armor_buffer[armor_buffer.size() - 1 - DN]), 
+                                            (armor_1.gyro_pose.timestamp + armor_buffer[armor_buffer.size() - 1 - DN].gyro_pose.timestamp) / 2));
+                while (armor_buffer.size() > DN + 1)
+                    armor_buffer.erase(armor_buffer.begin());
+                while (fitting_data.size() > 200)
+                    fitting_data.erase(fitting_data.begin());
+            }
         }
         break;
     case ArmorState::LOST:
@@ -387,23 +396,31 @@ FitTool::FitTool(uint32_t _start_time)
 
 void FitTool::Kalman_predict(RuneArmor armor_new)
 {
-    if(armor_new.angle - last_angle_time.angle < -M_PI)//顺时针旋转引起角度突变
+
+    if(armor_new.angle + 2*M_PI*angle_T - last_angle < -M_PI)//顺时针旋转引起角度突变
         angle_T += 1;
-    else if(armor_new.angle - last_angle_time.angle > M_PI)//逆时针旋转引起角度突变
+    else if(armor_new.angle + 2*M_PI*angle_T - last_angle > M_PI)//逆时针旋转引起角度突变
         angle_T -= 1;
     double correct_angle = spdpredictor.predict(armor_new.angle + 2*M_PI*angle_T, armor_new.gyro_pose.timestamp);
+    // cout<<"angle_T:"<<angle_T<<endl;
+    // cout<<"last_angle:"<<last_angle<<endl;
+    // cout<<"armor_new.angle:"<<armor_new.angle<<endl;
+    // cout<<"origin_angle:"<<armor_new.angle + 2*M_PI*angle_T<<endl;
+    cout<<"correct_angle:"<<correct_angle<<endl;
     armor_new.angle = correct_angle;
+    last_angle = correct_angle;
 }
 
 void FitTool::Kalman_init(RuneArmor armor_new, RuneArmor armor_old)
 {
+    angle_T = 0;
     if(armor_new.angle - armor_old.angle < -M_PI)//顺时针旋转引起角度突变
         angle_T += 1;
     else if(armor_new.angle - armor_old.angle > M_PI)//逆时针旋转引起角度突变
         angle_T -= 1;
-    double angle_init = armor_new.angle + 2*angle_T*M_PI + armor_old.angle;
+    double angle_init = (armor_new.angle + 2*angle_T*M_PI + armor_old.angle) / 2;
     double speed_init = (armor_new.angle + 2*angle_T*M_PI - armor_old.angle)/((double)(armor_new.gyro_pose.timestamp - armor_old.gyro_pose.timestamp)/1000.0); 
     uint32_t time_init = (armor_new.gyro_pose.timestamp + armor_old.gyro_pose.timestamp) / 2;
     spdpredictor.initState(angle_init, speed_init, time_init);
-    last_angle_time = AngleTime(angle_init, time_init);
+    last_angle = angle_init;
 };

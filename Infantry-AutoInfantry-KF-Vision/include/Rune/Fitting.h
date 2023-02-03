@@ -33,8 +33,8 @@ private:
     double T0_N = 90;      // 相位采样敄1�7
     double DT = 0.01;      // 采样时间间隔，单位：秄1�7
     double N = 400;        // 角��度采样敄1�7
-    // double DELAY_TIME = 0.37; // 预测时间，单位：秄1�7
-    double DELAY_TIME = 0;
+    double DELAY_TIME = 0.37; // 预测时间，单位：秄1�7
+    // double DELAY_TIME = 0;
     int DN = 1;            // 逐差法测速度间距
 
     uint32_t start_time;
@@ -43,7 +43,7 @@ private:
     bool is_clockwise;     // 顺时钄1�7
 
     int angle_T = 0;        		// 角度转过的周期，用以处理转动角度。
-	AngleTime last_angle_time = (0,0);		//上一个预测后的角速度与时间
+    float last_angle = 0;   //上一个预测后的角度
     bool is_Kalman_init = false;	//卡尔曼滤波初始化
 
 public:
@@ -93,7 +93,8 @@ public:
      */
     void initDirection();
 
-private:
+//private:
+public:
     /**
      *  @brief  击打大符模式
      */

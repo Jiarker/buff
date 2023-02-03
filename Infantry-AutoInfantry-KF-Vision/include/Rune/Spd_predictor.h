@@ -24,17 +24,17 @@ typedef struct SpeedTime
     }
 } SpeedTime;
 
-typedef struct AngleTime
-{
-    double angle;
-    uint32_t time;
+// typedef struct AngleTime
+// {
+//     double angle;
+//     uint32_t time;
 
-    AngleTime(double a = 0.0, uint32_t t = 0)
-    {
-        angle = a;
-        time = t;
-    }
-}AngleTime;
+//     AngleTime(double a = 0.0, uint32_t t = 0)
+//     {
+//         angle = a;
+//         time = t;
+//     }
+// }AngleTime;
 
 class SpdPredictor
 {
