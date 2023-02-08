@@ -61,10 +61,17 @@ double KFPredictor::predict(double angle, uint32_t time)
 
     EKFPredictor::EKFPredictor()
     {
+        kalman_filter = new AdaptiveEKF<2, 1>();
         cv::FileStorage fs("../Configure/RuneParam.xml", cv::FileStorage::READ);
         cv::Mat processNoise, measurementNoise;
         fs["EKF_spd_Q"] >> processNoise;
         fs["EKF_spd_R"] >> measurementNoise;
+
+        // cout<<kalman_filter->Q(0,0)<<endl;
+        // kalman_filter->Q(0,0) = processNoise.at<double>(0,0),
+        // kalman_filter->Q(1,1) = processNoise.at<double>(1,1);
+        // kalman_filter->R(0,0) = measurementNoise.at<double>(0,0);
+        // cout<<"-2"<<endl;
 
         //opencv与eigen矩阵转换
         cv::cv2eigen(processNoise, kalman_filter->Q);
@@ -78,10 +85,10 @@ double KFPredictor::predict(double angle, uint32_t time)
 
 EKFPredictor::~EKFPredictor(){}
 
-void EKFPredictor::rebootKalman(double angle, double speed)
+void EKFPredictor::rebootKalman(double angle)
 {
     kalman_filter->Xe[0] = angle;
-    kalman_filter->Xe[1] = speed;
+    kalman_filter->Xe[1] = 0;
 }
 
 void EKFPredictor::setUpdateTime(const double &delta_t)
@@ -112,16 +119,22 @@ double EKFPredictor::correct(const double angle)
 }
 
 
-double EKFPredictor::runKalman(const double angle, const double speed, const double &delta_t)
+double EKFPredictor::runKalman(const double angle, uint32_t time, double _a, double _w)
 {
     if(!is_kalman_init)
     {
+        a = _a;
+        w = _w;
+        prevent_time = time;
         is_kalman_init = true;
-        rebootKalman(angle, speed);
+        rebootKalman(angle);
         return angle;
     }
     else
     {
+        // cout<<"a:"<<a<<"w:"<<w<<endl;
+        double delta_t = double(time - prevent_time);
+        prevent_time = time;
         setUpdateTime(delta_t);
         return correct(angle);
     }

@@ -93,8 +93,8 @@ class EKFPredictor
 private:
     /*data*/
     AdaptiveEKF<2, 1>*kalman_filter;
-    bool is_kalman_init;
-    void rebootKalman(double angle, double speed);
+    bool is_kalman_init = false;
+    void rebootKalman(double angle);
     void setUpdateTime(const double &delta_t);
     double correct(double angle);
 
@@ -102,6 +102,8 @@ private:
     //fitting解算参数
     double a;
     double w;
+
+    uint32_t prevent_time;
 
     Eigen::Matrix<double, 2, 1>process_noice;
     Eigen::Matrix<double, 1, 1> process_noise_matrix;
@@ -112,8 +114,7 @@ private:
 public:
     EKFPredictor();
     ~EKFPredictor();
-    double runKalman(const double angle, const double speed, const double &delta_t);
-    double predict(const double &predict_t);
+    double runKalman(const double angle = 0, uint32_t time = 0, double _a = 0, double _w = 0);
     void resetKalman()
     {
         is_kalman_init = false;

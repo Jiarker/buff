@@ -5,6 +5,7 @@
 #ifndef _ADAPTIVE_EKF_HPP_
 #define _ADAPTIVE_EKF_HPP_
 
+// #include <ceres/ceres.h>
 #include "ceres/jet.h"
 #include "eigen3/Eigen/Dense"
 #include <vector>
@@ -23,6 +24,7 @@ public:
         : Xe(X0), P(MatrixXX::Identity()), Q(MatrixXX::Identity()), R(MatrixYY::Identity())
     {
     }
+
     void resetMatrix()
     {
         P = MatrixXX::Identity();

@@ -1,3 +1,8 @@
 {
-    "cmake.sourceDirectory": "${workspaceFolder}/Infantry-AutoInfantry"
+    "cmake.sourceDirectory": "${workspaceFolder}/Infantry-AutoInfantry-EKF-Vision",
+    "files.associations": {
+        "dense": "cpp",
+        "vector": "cpp",
+        "random": "cpp"
+    }
 }

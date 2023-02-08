@@ -79,8 +79,8 @@
     <cols>2</cols>
     <dt>f</dt>
     <data>
-        500000. 0.   <!-- 1-->
-        0. 500000.
+        1. 0.   <!-- 1-->
+        0. 1.
     </data>
         
     </kalman_spd_Q>
@@ -91,7 +91,7 @@
     <cols>1</cols>
     <dt>f</dt>
     <data>
-       0.09
+       1.
 
     </data>
     </kalman_spd_R>
@@ -103,8 +103,8 @@
     <cols>2</cols>
     <dt>f</dt>
     <data>
-        500000. 0.   <!-- 1-->
-        0. 500000.
+        3. 0.   <!-- 1-->
+        0. 3.
     </data>
         
     </EKF_spd_Q>
@@ -115,7 +115,7 @@
     <cols>1</cols>
     <dt>f</dt>
     <data>
-       0.09
+       0.5
 
     </data>
     </EKF_spd_R>

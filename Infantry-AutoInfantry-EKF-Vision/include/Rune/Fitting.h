@@ -23,6 +23,7 @@ public:
     vector<SpeedTime> fitting_data;
     vector<double> est_a;
     KFPredictor KF_predictor;//卡尔曼滤波器
+    EKFPredictor EKF_predictor;
 
 private:
     double _a = 0.9;  // 振幅 [0.780, 1.045]
@@ -250,6 +251,14 @@ public:
 	*	@param	 armor_new	新装甲板
 	*/
 	void Kalman_predict(RuneArmor armor_new);
+
+	// /**
+	// *   @brief	扩展卡尔曼滤波
+	// */
+    // double runEKF(double angle, uint32_t time, double speed = 0, double a, double w)
+    // {
+    //     return EKF_predictor.runKalman(angle, speed, time, a, w);
+    // }
 
     ~FitTool() = default;
 };
